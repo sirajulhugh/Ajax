@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css"/>
+</head>
+<body>
+    <div class="container">
+        <h1>Ajax project</h1>
+        <form id="editform">
+            <label>Username</label><br>
+                <input type="text" name="username" id="name" class="form-control"><br>
+                <label>Age</label><br>
+                <input type="number" name="age" id="age" class="form-control"><br>
+                <label>Emailid</label><br>
+                <input type="email" name="email" id="email" class="form-control"><br>
+                <input type="hidden" id="itemId" name="itemId">
+
+                <button onclick="add()">Add</button>
+                <button type="button" onclick="updateItem()">Update</button>
+        </form>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">
+                        name
+                    </th>
+                    <th scope="col">
+                        age
+                    </th>
+                    <th scope="col">
+                        email
+                    </th>
+                    <th scope="col">
+                        action
+                    </th>
+
+                </tr>
+            </thead>
+            <tbody id="itemsbody">
+                
+
+            </tbody>
+            
+        </table>
+
+    </div>
+    <script>
+        $(document).ready(function() {
+            loadItems();
+        });
+
+        function loadItems() {
+            $.ajax({
+                url: "{% url 'get_items' %}",
+                success: function(data) {
+                    $('#itemsbody').empty();
+                    $.each(data, function(index, item) {
+                        console.log(item)
+                        $('#itemsbody').append('<tr><td>' + item.name + '</td><td>' + item.age + '</td><td>' + item.email + '</td><td><button onclick="edit(' + item.id + ')" class="mr-2">Edit</button><button onclick="deleteItem(' + item.id + ') " class="mr-2">Delete</button></td></tr>');
+
+                        
+                    }); 
+                }
+            });
+        }
+        function add() {
+            var name = $('#name').val();
+            var age = $('#age').val();
+            var email = $('#email').val();
+            $.ajax({
+                type: 'POST',
+                url: "{% url 'add_item' %}",
+                data: {
+                    'name': name,
+                    'age': age,
+                    'email':email,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function() {
+                    loadItems();
+                    $('#name').val('');
+                    $('#age').val('');
+                    $('#email').val('');
+                }
+            });
+        }
+
+        function edit(itemId) {
+            console.log("Item ID:", itemId); 
+            $.ajax({
+                
+                type: 'GET',
+                url: "{% url 'edit_item' %}?id=" + itemId,
+                success: function(data) {
+                    $('#editForm #name').val(data.name);
+                    $('#editForm #age').val(data.age);
+                    $('#editForm #email').val(data.email);
+                    $('#editForm #itemId').val(itemId);
+                }
+            });
+        }
+        function updateItem() {
+            var name = $('#name').val();
+            var age = $('#age').val();
+            var email = $('#email').val();
+            
+            var itemId = $('#itemId').val();
+            $.ajax({
+                type: 'POST',
+                url: "{% url 'update_item' %}",
+                data: {
+                    'id': itemId,
+                    'name': name,
+                    'age': age,
+                    'email':email,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        loadItems();
+                        $('#name').val('');
+                        $('#age').val('');
+                        $('#email').val('');
+                    }
+                }
+            });
+        }
+        
+        function deleteItem(itemId) {
+            if (confirm("Are you sure you want to delete this item?")) {
+                $.ajax({
+                    type: 'POST',
+                    url: "{% url 'delete_item' %}",
+                    data: {
+                        'id': itemId,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            loadItems();
+                        }
+                    }
+                });
+            }
+        }
+
+    </script>
+</body>
+</html>
